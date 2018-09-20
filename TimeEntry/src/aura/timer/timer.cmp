@@ -1,0 +1,55 @@
+<aura:component implements="flexipage:availableForRecordHome,force:lightningQuickActionWithoutHeader,force:hasRecordId"
+    controller="TimerController" access="global" >
+    <aura:attribute name="timeVal" type="String"/>
+    <aura:attribute name="timeValBk" type="String"/>
+    <aura:attribute name="note" type="String"/>
+    <aura:attribute name="intervalId" type="String"/>
+    <aura:attribute name="startTime" type="String"/>
+    <aura:attribute name="taskObj" type="Object"/>
+    <aura:attribute name="projectObj" type="Object"/>
+    <aura:attribute name="timeEntryId" type="String"/>
+    <aura:attribute name="wrpValue" type="TimerController.TimeEntryWrapper"/>
+    <aura:attribute name="projects" type="List"/>
+    <aura:attribute name="tasks" type="List"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+
+	<form>    
+    <div class="slds-box slds-box_x-small">
+    	<lightning:select label="Project" name="proj_opt" aura:id="p_opt" onchange="{! c.disTasks }">
+            <aura:iteration items="{!v.projects}" var="proj" >
+                <option value="{!proj.Id}">{!proj.Name}</option>
+            </aura:iteration>
+    	</lightning:select>
+    </div>
+    <div class="slds-box slds-box_x-small">
+    	<lightning:select label="Task" name="task_opt" aura:id="t_opt">
+            <option value="">--Select Task --</option>
+            <aura:iteration items="{!v.tasks}" var="task">
+                <option value="{!task.Id}">{!task.Name}</option>
+            </aura:iteration>
+    	</lightning:select>
+    </div>
+    	<div class="slds-box slds-box_x-small">
+      		<!-- label class="slds-form-element__label" for="textarea-id-01">Notes</label -->
+      			<!-- div class="slds-form-element__control" -->
+        			<ui:inputTextarea class="slds-textarea" aura:id="textArea_d"
+                                        placeholder="Description" value="{!v.note}"> </ui:inputTextarea>
+      			<!-- /div -->
+    	</div>
+    <div class="slds-box slds-box_x-small">
+    <div class="slds-form-element">
+    	<label class="slds-form-element__label" for="text-input-id-1">Time</label>
+    	<div class="slds-form-element__control">
+            <input id="text-input-id-1" class="slds-input" type="text" value="{!v.timeVal}"
+                   	placeholder="Add time (hh:mm) or start the timer by clicking on start button!"/>
+      	</div>
+    </div>
+    </div>
+    <div class="slds-box slds-box_x-small">
+	<lightning:button label="Start" onclick="{!c.startTimer}"/>
+    <lightning:button label="Pause" onclick="{!c.pauseTimer}"/>
+    <lightning:button label="Resume" onclick="{!c.resumeTimer}"/>
+    <lightning:button label="Log Time" onclick="{!c.save}"/>
+    </div>
+    </form>
+</aura:component>
