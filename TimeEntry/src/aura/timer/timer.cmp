@@ -2,27 +2,72 @@
     controller="TimerController" access="global" >
     <aura:attribute name="timeVal" type="String"/>
     <aura:attribute name="timeValBk" type="String"/>
+    <aura:attribute name="startTimer" type="Boolean" default="true"/>
     <aura:attribute name="note" type="String"/>
     <aura:attribute name="intervalId" type="String"/>
     <aura:attribute name="startTime" type="String"/>
     <aura:attribute name="taskObj" type="Object"/>
-    <aura:attribute name="projectObj" type="Object"/>
+    <aura:attribute name="pause" type="Boolean" default="false"/>
+    <aura:attribute name="isOpen" type="boolean" default="false"/>
     <aura:attribute name="timeEntryId" type="String"/>
-    <aura:attribute name="wrpValue" type="TimerController.TimeEntryWrapper"/>
+    <aura:attribute name="wrpList" type="List"/>
+    <aura:attribute name="wrpObj" type="TimerController.TimeEntryWrapper"/>
     <aura:attribute name="projects" type="List"/>
     <aura:attribute name="tasks" type="List"/>
+    <aura:attribute name="taskId" type="String"/>
     <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
 
-	<form>    
+	<form>
+        <!--Use aura:if tag to display Model Box, on the bese of conditions. [isOpen boolean attribute] -->   
+        <aura:if isTrue="{!v.isOpen}">
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+                     aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <!-- ###### MODAL BOX HEADER Start ######-->
+                    <header class="slds-modal__header">
+                        <lightning:buttonIcon iconName="utility:close"
+                                              onclick="{!c.closeModel}"
+                                              alternativeText="close"
+                                              variant="bare-inverse"
+                                              class="slds-modal__close"/>
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate"></h2>
+                    </header>
+                    <!--###### MODAL BOX BODY Part Start######-->
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <p>
+                            <lightning:select label="Select Existing Task" name="t_Proj" aura:id="tsk_projId">
+                                <aura:iteration items="{!v.wrpList}" var="wpr" >
+                                    <option value="{!wpr.timeEntry.Id}">
+                                        {!wpr.timeEntry.Project__r.Name+ '--'+wpr.timeEntry.Task__r.Name+'--'+wpr.timeEntry.Name}
+                                    </option>
+                                </aura:iteration>
+                            </lightning:select>
+                        </p>
+                    </div>
+                    <!--###### MODAL BOX FOOTER Part Start ######-->
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="neutral" 
+                                          label="Cancel"
+                                          title="Cancel"
+                                          onclick="{!c.closeModel }"/>
+                        <lightning:button variant="brand" 
+                                          label="Continue"
+                                          title="Continue"
+                                          onclick="{!c.continueTime}"/>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </aura:if>
     <div class="slds-box slds-box_x-small">
-    	<lightning:select label="Project" name="proj_opt" aura:id="p_opt" onchange="{! c.disTasks }">
+    	<lightning:select label="Project" name="proj_opt" aura:id="p_opt" onchange="{!c.disTasks}">
             <aura:iteration items="{!v.projects}" var="proj" >
                 <option value="{!proj.Id}">{!proj.Name}</option>
             </aura:iteration>
     	</lightning:select>
     </div>
     <div class="slds-box slds-box_x-small">
-    	<lightning:select label="Task" name="task_opt" aura:id="t_opt">
+    	<lightning:select label="Task" name="task_opt" aura:id="t_opt" onchange="{!c.changeTask}" value="{!v.taskId}">
             <option value="">--Select Task --</option>
             <aura:iteration items="{!v.tasks}" var="task">
                 <option value="{!task.Id}">{!task.Name}</option>
@@ -32,16 +77,23 @@
     	<div class="slds-box slds-box_x-small">
       		<!-- label class="slds-form-element__label" for="textarea-id-01">Notes</label -->
       			<!-- div class="slds-form-element__control" -->
-        			<ui:inputTextarea class="slds-textarea" aura:id="textArea_d"
+        			<ui:inputTextarea class="slds-textarea" aura:id="textArea_d" label="Notes"
                                         placeholder="Description" value="{!v.note}"> </ui:inputTextarea>
       			<!-- /div -->
     	</div>
     <div class="slds-box slds-box_x-small">
     <div class="slds-form-element">
-    	<label class="slds-form-element__label" for="text-input-id-1">Time</label>
     	<div class="slds-form-element__control">
-            <input id="text-input-id-1" class="slds-input" type="text" value="{!v.timeVal}"
-                   	placeholder="Add time (hh:mm) or start the timer by clicking on start button!"/>
+            <ui:inputText label="Time" class="field" value="{!v.timeVal}"
+                          placeholder="Add time (hh:mm) or start the timer by clicking on start button!"/>
+      	</div>
+    </div>
+    </div>
+    <div class="slds-box slds-box_x-small">
+    <div class="slds-form-element">
+    	<div class="slds-form-element__control">
+            <label class="slds-form-element__label" for="text-id-01">Time Entry Name</label>
+            <ui:outputText class="field" value="{!v.wrpObj.timeEntry.Name}"/>
       	</div>
     </div>
     </div>

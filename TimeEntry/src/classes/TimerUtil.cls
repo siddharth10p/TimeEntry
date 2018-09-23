@@ -24,13 +24,34 @@ public with sharing class TimerUtil {
         return Decimal.valueOf (hh+'.'+mm);
     }
 
-    public static Datetime retrieveElapsedDate (Datetime pStartTime, Datetime pPauseTime) {
+    public static Datetime convertDateTimeGMT (Datetime pDateTime) {
+        return Datetime.newInstanceGMT(pDateTime.year(), pDateTime.month(),
+                    pDateTime.day(), pDateTime.hour(), pDateTime.minute(), pDateTime.second());
+    }
+
+    public static Datetime retrieveElapsedTime (Datetime pStartTime, Datetime pPauseTime) {
         if (pStartTime == null || pPauseTime == null)
             return null;
-        Double sec = (Datetime.now ().getTime() - pPauseTime.getTime()) / 1000;
-        pStartTime.addSeconds(Integer.valueOf (sec));
-        return pStartTime;
+        Datetime pauseTimeGMT = convertDateTimeGMT (pPauseTime);
+        Datetime startTimeGMT = convertDateTimeGMT (pStartTime);
+        System.debug ('localTime ==> ' + pauseTimeGMT.getTime());
+        System.debug ('localTime ==> ' + Datetime.now ().getTime());
+        Double sec = (Datetime.now ().getTime() - pauseTimeGMT.getTime()) / 1000;
+        System.debug ('sec ==> ' + sec);
+        return startTimeGMT.addSeconds(Integer.valueOf (sec));
     }
+
+    // A method that returns wrapper instance of timer controller class
+    public static TimerController.TimeEntryWrapper createWrpInstance (Time_Entry__c pTimeEntry) {
+        if (pTimeEntry == null) return null;
+        Decimal totMins = pTimeEntry.Timer_Total_Mins__c;
+        Decimal hh = Math.floor (totMins /60);
+        Integer mm = Math.mod (Integer.valueOf (totMins), 60);
+        Boolean isPause = pTimeEntry.Pause_Time__c == null ? false : true;
+        return new TimerController.TimeEntryWrapper ( pTimeEntry,
+                                            Integer.valueOf (hh) + ':' + mm + ':0',
+                                            isPause);
+    } // End method
 
     // A method to return name of the month
     public static Map<Integer, String> monthName = 

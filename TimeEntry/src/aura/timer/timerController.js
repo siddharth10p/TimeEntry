@@ -17,11 +17,24 @@
         helper.pause (component);
     },
     
+  	changeTask : function (component, event, helper) {
+    	helper.validatePause (component, event, helper);
+  	},
     resumeTimer : function (component, event, helper) {
-        helper.resume (component);
+        helper.openModel (component, event, helper);
+        //helper.resume (component);
     },
     
+  	continueTime : function (component, event, helper) {
+  		helper.resume (component);
+ 	},
+  
     save : function (component, event, helper) {
-    	helper.saveTime (component, event, helper);
-	}
+    	helper.saveTime (component);
+	},
+ 
+   closeModel: function(component, event, helper) {
+      // for Hide/Close Model,set the "isOpen" attribute to "Fasle"  
+      component.set("v.isOpen", false);
+   }
 })
