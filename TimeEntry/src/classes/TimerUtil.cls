@@ -13,11 +13,11 @@ public with sharing class TimerUtil {
         String hh, mm ;
         hh = strList.get (0);
         Integer min = Integer.valueOf (strList.get (1));
-        if (min > 45)
+        if (min >= 45)
             mm = '75';
-        else if (min > 30)
+        else if (min >= 30)
             mm = '50';
-        else if (min > 15)
+        else if (min >= 15)
             mm = '25';
         else 
             mm = '00';
@@ -34,21 +34,19 @@ public with sharing class TimerUtil {
             return null;
         Datetime pauseTimeGMT = convertDateTimeGMT (pPauseTime);
         Datetime startTimeGMT = convertDateTimeGMT (pStartTime);
-        System.debug ('localTime ==> ' + pauseTimeGMT.getTime());
-        System.debug ('localTime ==> ' + Datetime.now ().getTime());
         Double sec = (Datetime.now ().getTime() - pauseTimeGMT.getTime()) / 1000;
         System.debug ('sec ==> ' + sec);
         return startTimeGMT.addSeconds(Integer.valueOf (sec));
     }
 
     // A method that returns wrapper instance of timer controller class
-    public static TimerController.TimeEntryWrapper createWrpInstance (Time_Entry__c pTimeEntry) {
+    public static TimerControllerChild createWrpInstance (Time_Entry__c pTimeEntry) {
         if (pTimeEntry == null) return null;
         Decimal totMins = pTimeEntry.Timer_Total_Mins__c;
         Decimal hh = Math.floor (totMins /60);
         Integer mm = Math.mod (Integer.valueOf (totMins), 60);
         Boolean isPause = pTimeEntry.Pause_Time__c == null ? false : true;
-        return new TimerController.TimeEntryWrapper ( pTimeEntry,
+        return new TimerControllerChild ( pTimeEntry,
                                             Integer.valueOf (hh) + ':' + mm + ':0',
                                             isPause);
     } // End method
@@ -69,4 +67,26 @@ public with sharing class TimerUtil {
         11 => 'Nov',
         12 => 'Dec'
     };
+
+    // A method that creates data for test classes
+    public static void setTestData () {// create test data
+        Account acc = new Account (Name='Test Acc');
+        insert acc;
+
+        Project__c proj = new Project__c (Client__c = acc.Id);
+        insert proj;
+
+        Task__c task = new Task__c (Project__c = proj.Id, Name = 'Test Task');
+        insert task;
+
+        Timesheet__c timeSheet = new Timesheet__c (Developer__c = UserInfo.getUserId (), 
+                            Week_Start_Date__c = Date.today().addDays (-1),
+                            Week_End_Date__c = Date.today().addDays (+6), Approve__c = false);
+        insert timeSheet;
+
+        Time_Entry__c timeEntry = new Time_Entry__c (Timesheet__c = timeSheet.Id,
+                        Start_Time__c = Datetime.now(), Pause_Time__c = Datetime.now (),
+                        Approve__c = false);
+        insert timeEntry;
+    }
 }

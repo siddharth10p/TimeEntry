@@ -13,6 +13,7 @@
         	}
         	s = s + 1;
         	cmp.set ("v.timeVal", h + ":"+ m + ":" + s);
+            cmp.set ("v.timeValBk", "v.timeVal"); // set the same time in hidden attribute
             }, 1000);
         cmp.set ("v.intervalId", tVal);
     },
@@ -154,15 +155,18 @@
     
     setValues : function (cmp) {
         cmp.set ("v.timeEntryId",  cmp.get ("v.wrpObj[timeEntry.Id]"));
-        var proId = cmp.get ("v.wrpObj.timeEntry.Project__c");
-        if (proId) cmp.find("p_opt").set("v.value", proId);
-        var taskId = cmp.get ("v.wrpObj.timeEntry.Task__c");
-        if (taskId)  //cmp.set ("v.taskId", taskId);
+        var proId = cmp.get ("v.wrpObj.timeEntry.tesp__Project__c");
+        if (proId) 
+            cmp.find("p_opt").set("v.value", proId);
+        var taskId = cmp.get ("v.wrpObj.timeEntry.tesp__Task__c");
+        if (taskId)  
            cmp.find("t_opt").set("v.value", taskId);
-        cmp.set ("v.note", cmp.get ("v.wrpObj.timeEntry.Notes__c")); 
+        cmp.set ("v.note", cmp.get ("v.wrpObj.timeEntry.tesp__Notes__c")); 
         var time = cmp.get ("v.wrpObj.currTime");
+        if (this.formatTime (time) === this.formatTime (cmp.get ("v.timeValBk")))
+            time = cmp.get ("v.timeValBk"); // assign timer time 
         if (time) {
-            cmp.set ("v.timeValBk", time);
+            //cmp.set ("v.timeVal", time);
             var pause = cmp.get ("v.wrpObj.isPause");
             cmp.set ("v.pause", pause);
             this.blinkTimeVal (pause, time, cmp);
@@ -173,18 +177,22 @@
     },
 
     validatePause : function (cmp, evnt, helper) {
-        var pause = cmp.get ("v.pause");
-        if (!pause) {
-            alert ("Kindly pause the timer for the current task, then click on resume to change task!");
-            this.setValues (cmp); // setting the original values
-            return;
+		var timerVal = cmp.get ("v.timeVal");
+        if (timerVal) {
+            var pause = cmp.get ("v.pause");
+            if (!pause) {
+                alert ("Kindly pause the timer for the current task, then click on resume to change task!");
+                this.setValues (cmp); // setting the original values
+                return;
+            }
         }
+       // this.retrieveTasks (cmp, evnt, helper);
     },
     
     blinkTimeVal : function (pause, ptimeVal, cmp) {
-        cmp.set ("v.timeValBk", ptimeVal);
-        //var temp = cmp.get ("v.intervalId");
-        //clearInterval (temp);
+        cmp.set ("v.timeValBk", ptimeVal); // Setting the time value in backend variable
+        var temp = cmp.get ("v.intervalId");
+        clearInterval (temp);
         if (pause) {
             var timeVal;
             var tVal = setInterval(function () {
@@ -197,16 +205,32 @@
             var timeArry = ptimeVal.split (':');
             var hh = parseInt (timeArry[0]);
             var mm = parseInt (timeArry[1]);
-            var ss = parseInt (timeArry[2]);
+            var ss = parseInt (timeArry[2]); 
             this.start (hh, mm, ss, cmp);
         }
     },
-
+    
+    validateData : function (cmp) {
+        var taskId = cmp.find("t_opt").get ("v.value");
+        var proId = cmp.find("p_opt").get ("v.value");
+        var notes = cmp.get ("v.note");
+        if (!taskId || !proId || !notes) {
+            alert ("Kindly select a valid project, task and description while loggin in time!");
+            return false;
+        } else 
+            return true;
+    },
+    
     saveTime : function (cmp) {
-        var sure = confirm ("Are you sure?");
-        if (!sure) {
-            alert ("I am in!");
-            return;
+        var isValidData = this.validateData (cmp); // Validate data is set correctly
+        if (!isValidData) return;
+        var saveConfirm = cmp.get ("v.confirmSave");
+        if (!saveConfirm) {
+        	var sure = confirm ("Are you sure?");
+        	if (!sure) {
+            	return;
+        	}
+            cmp.set ("v.confirmSave", true); // confirm is true to hide the confirm dialogue if the method is called again 
         }
         if (!cmp.get ("v.timeEntryId")) {
             cmp.set ("v.startTimer", false); // Stop kicking off the timer as time is manually logged
@@ -237,6 +261,7 @@
                 }
             
             } else if (state === 'SUCCESS'){
+                cmp.set ("v.confirmSave", false);
                 cmp.set ("v.timeVal", "0:0:0");
                 cmp.set ("v.timeValBk", "00:00:00");
                 cmp.set ("v.note", "");
@@ -250,35 +275,6 @@
         });
         $A.enqueueAction(action);
     },
-    
-	fetchTask : function (cmp) {
-		var action = cmp.get ("c.fetchTask");
-        action.setParams ({
-            pTaskId : cmp.get ("v.recordId")
-        });
-        
-        action.setCallback (this, function (response) {
-            var state = response.getState ();
-            if (state === 'SUCCESS') {
-                var task = response.getReturnValue ();
-                cmp.set ("v.taskObj", task);
-            } else if (state === 'ERROR') {
-                var errors = response.getError();
-                if (errors) {
-                    if (errors[0] && errors[0].message) {
-                        console.log("Error message: " + 
-                                 errors[0].message);
-                    }
-                } else {
-                    console.log("Unknown error");
-                }
-            
-            } else {
-                // do nothing
-            }
-        });
-        $A.enqueueAction(action);
-	},
 	
     retrieveProjects : function (cmp, evnt, helper) {
         var action = cmp.get ("c.fetchAllProjects");
@@ -310,12 +306,14 @@
     },
     
     formatTime : function (pTime) {
-    	var time = pTime.split(":");
-        if (time.length > 2) {
-            if (time[2].length == 2)
-                return pTime.slice(0, pTime.length- 3);
-            else
-                return pTime.slice(0, pTime.length- 2);
+        if (pTime) {
+            var time = pTime.split(":");
+            if (time.length > 2) {
+                if (time[2].length == 2)
+                    return pTime.slice(0, pTime.length- 3);
+                else
+                    return pTime.slice(0, pTime.length- 2);
+            }
         }
         return pTime;
     },
@@ -326,11 +324,10 @@
             return;
         }
             
-        var temp = cmp.get ("v.intervalId");
-        clearInterval (temp);
         var action = cmp.get ("c.updatePauseTime");
         action.setParams ({
-            pTimeEntryId : cmp.get ("v.timeEntryId")
+            pTimeEntryId : cmp.get ("v.timeEntryId"),
+            pNotes : cmp.get ("v.note")
         });
         
         action.setCallback (this, function (response) {
@@ -368,16 +365,10 @@
             var state = response.getState ();
             if (state === 'SUCCESS') {
                 console.log ("Elapsed time updated successfully!");
-                var temp = cmp.get ("v.intervalId");
-                clearInterval (temp);
                // cmp.set ("v.pause", false);
                 cmp.set ("v.wrpObj", response.getReturnValue ());
-                this.setValues (cmp); // set values for timer
                 cmp.set("v.isOpen", false);
-                var value = cmp.get ("v.timeValBk");
-                var time = value.split(":");
-                this.start (parseInt(time[0], 10), parseInt(time[1], 10),
-                            parseInt(time[2], 10), cmp);
+                this.setValues (cmp); // set values for timer
             } else if (state === 'ERROR') {
                 var errors = response.getError();
                 if (errors) {

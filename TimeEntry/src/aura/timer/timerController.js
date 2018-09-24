@@ -1,8 +1,8 @@
 ({  doInit : function (component, event, helper) {
     //alert ('Hi');
         helper.updateTimer (component, event, helper);
-    	helper.setProjId (component, event, helper);
     	helper.retrieveProjects (component, event, helper);
+    	helper.setProjId (component, event, helper);
 	},
 	startTimer : function (component, event, helper) {
     	//helper.updateStartTime (component, event, helper);
@@ -17,7 +17,7 @@
         helper.pause (component);
     },
     
-  	changeTask : function (component, event, helper) {
+  	validate : function (component, event, helper) {
     	helper.validatePause (component, event, helper);
   	},
     resumeTimer : function (component, event, helper) {

@@ -28,5 +28,15 @@
         <members>*</members>
         <name>StaticResource</name>
     </types>
+    <types>
+        <members>Account</members>
+        <members>User</members>
+        <members>*</members>
+        <name>CustomObject</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>PermissionSet</name>
+    </types>
     <version>38.0</version>
 </Package>

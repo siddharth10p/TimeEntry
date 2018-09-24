@@ -1,4 +1,4 @@
-<aura:component implements="flexipage:availableForRecordHome,force:lightningQuickActionWithoutHeader,force:hasRecordId"
+<aura:component implements="flexipage:availableForRecordHome,force:lightningQuickActionWithoutHeader,force:hasRecordId,force:appHostable"
     controller="TimerController" access="global" >
     <aura:attribute name="timeVal" type="String"/>
     <aura:attribute name="timeValBk" type="String"/>
@@ -6,15 +6,16 @@
     <aura:attribute name="note" type="String"/>
     <aura:attribute name="intervalId" type="String"/>
     <aura:attribute name="startTime" type="String"/>
-    <aura:attribute name="taskObj" type="Object"/>
     <aura:attribute name="pause" type="Boolean" default="false"/>
     <aura:attribute name="isOpen" type="boolean" default="false"/>
+    <aura:attribute name="confirmSave" type="boolean" default="false"/>
     <aura:attribute name="timeEntryId" type="String"/>
     <aura:attribute name="wrpList" type="List"/>
-    <aura:attribute name="wrpObj" type="TimerController.TimeEntryWrapper"/>
+    <aura:attribute name="wrpObj" type="TimerControllerChild"/>
     <aura:attribute name="projects" type="List"/>
     <aura:attribute name="tasks" type="List"/>
     <aura:attribute name="taskId" type="String"/>
+    <aura:attribute name="projId" type="String"/>
     <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
 
 	<form>
@@ -38,7 +39,7 @@
                             <lightning:select label="Select Existing Task" name="t_Proj" aura:id="tsk_projId">
                                 <aura:iteration items="{!v.wrpList}" var="wpr" >
                                     <option value="{!wpr.timeEntry.Id}">
-                                        {!wpr.timeEntry.Project__r.Name+ '--'+wpr.timeEntry.Task__r.Name+'--'+wpr.timeEntry.Name}
+                                        {!wpr.timeEntry.tesp__Project__r.Name+ '--'+wpr.timeEntry.tesp__Task__r.Name+'--'+wpr.timeEntry.Name}
                                     </option>
                                 </aura:iteration>
                             </lightning:select>
@@ -49,7 +50,7 @@
                         <lightning:button variant="neutral" 
                                           label="Cancel"
                                           title="Cancel"
-                                          onclick="{!c.closeModel }"/>
+                                          onclick="{!c.closeModel}"/>
                         <lightning:button variant="brand" 
                                           label="Continue"
                                           title="Continue"
@@ -62,15 +63,15 @@
     <div class="slds-box slds-box_x-small">
     	<lightning:select label="Project" name="proj_opt" aura:id="p_opt" onchange="{!c.disTasks}">
             <aura:iteration items="{!v.projects}" var="proj" >
-                <option value="{!proj.Id}">{!proj.Name}</option>
+                <option value="{!proj.Id}" >{!proj.Name}</option>
             </aura:iteration>
     	</lightning:select>
     </div>
     <div class="slds-box slds-box_x-small">
-    	<lightning:select label="Task" name="task_opt" aura:id="t_opt" onchange="{!c.changeTask}" value="{!v.taskId}">
+    	<lightning:select label="Task" name="task_opt" aura:id="t_opt" onchange="{!c.validate}">
             <option value="">--Select Task --</option>
-            <aura:iteration items="{!v.tasks}" var="task">
-                <option value="{!task.Id}">{!task.Name}</option>
+            <aura:iteration items="{!v.tasks}" var="task" >
+                <option value="{!task.Id}" >{!task.Name}</option>
             </aura:iteration>
     	</lightning:select>
     </div>

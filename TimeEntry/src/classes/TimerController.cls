@@ -16,10 +16,10 @@ public without sharing class TimerController {
             timeEntry.Start_Time__c = Datetime.now();
             timeEntry.Timesheet__c = retrieveTimeSheetId (timeEntry);
             insert timeEntry;
-        	System.debug ('timeEntry ==> '+ timeEntry);
+            System.debug ('timeEntry ==> '+ timeEntry);
         return timeEntry.Id;
     }
-    
+
     public static String retrieveTimeSheetId (Time_Entry__c pTimeEntry) {
         List<Timesheet__c> timeSheetList = [SELECT Id FROM Timesheet__c
                                             WHERE Approve__c = false
@@ -90,7 +90,7 @@ public without sharing class TimerController {
     }
 
    @AuraEnabled
-    public static List<TimeEntryWrapper> retrieveTimeObj (String pProjId) {
+    public static List<TimerControllerChild> retrieveTimeObj (String pProjId) {
        // if (String.isBlank (pProjId)) 
         //    return null;
         Set<Id> timesheetIdSet = new Set<Id> ();
@@ -101,7 +101,7 @@ public without sharing class TimerController {
                                         AND Developer__c =: UserInfo.getUserId ()]) {
             timesheetIdSet.add (timesheet.Id);
         }
-            List<TimeEntryWrapper> timeListToReturn = new List<TimeEntryWrapper> ();
+            List<TimerControllerChild> timeListToReturn = new List<TimerControllerChild> ();
             // Fetch an active time entry related to the current project record
             String queryStr = ' SELECT Id, Name, Timer_Total_Mins__c, Notes__c, Project__c, Task__c,'+
                               ' Project__r.Name, Task__r.Name, Pause_Time__c FROM Time_Entry__c';
@@ -119,19 +119,6 @@ public without sharing class TimerController {
                     timeListToReturn.add ( TimerUtil.createWrpInstance (timeEntry));
                 }
             }
-            /*List<Time_Entry__c> timeEntryList = Database.query (queryStr);[SELECT Id, Timer_Total_Mins__c, Notes__c,
-                                                    Project__c, Task__c, Pause_Time__c
-                                                FROM Time_Entry__c
-                                                WHERE Project__c =: pProjId
-                                                AND End_Time__c = null
-                                                AND Start_Time__c <> null
-                                                AND Approve__c = false
-                                                AND Timesheet__c IN :([SELECT Id FROM Timesheet__c
-                                                        WHERE Approve__c = false
-                                                        AND Week_Start_Date__c <= TODAY
-                                                        AND Week_End_Date__c >= TODAY
-                                                        AND Developer__c =: UserInfo.getUserId ()])
-                                            ORDER BY CreatedDate DESC]; */
         System.debug ('timeListToReturn ==> '+ timeListToReturn);
         return timeListToReturn;
     } // End method
@@ -147,10 +134,10 @@ public without sharing class TimerController {
     }
     
     @AuraEnabled //  A method to update pause time when user clicks on pause
-    public static void updatePauseTime (String pTimeEntryId) {
+    public static void updatePauseTime (String pTimeEntryId, String pNotes) {
         System.debug ('pTimeEntryId ===> '+ pTimeEntryId);
         if (pTimeEntryId != null) {
-            Time_Entry__c tEntry = [SELECT Id, Pause_Time__c,
+            Time_Entry__c tEntry = [SELECT Id, Pause_Time__c, Notes__c,
                                         Project__c, Task__c
                                     FROM Time_Entry__c
                                     WHERE Id =: pTimeEntryId
@@ -159,13 +146,14 @@ public without sharing class TimerController {
                                     AND Approve__c = false
                                     LIMIT 1 ];
             tEntry.Pause_Time__c = Datetime.now ();
+            tEntry.Notes__c = pNotes;
             update tEntry;
             System.debug ('tEntry ===> '+ tEntry);
         }
     }
-    
+
     @AuraEnabled //  A method to update pause time when user clicks on pause
-    public static TimeEntryWrapper updateElapsedTime (String pTimeEntryId) {
+    public static TimerControllerChild updateElapsedTime (String pTimeEntryId) {
         System.debug ('pTimeEntryId ===> '+ pTimeEntryId);
         if (pTimeEntryId == null) return null;
             Time_Entry__c tEntry = [SELECT Id, Pause_Time__c, Time_Elapsed__c, Timer_Total_Mins__c,
@@ -196,19 +184,5 @@ public without sharing class TimerController {
         return [SELECT Id, Name, Project_expenses__c, Budget__c
                 FROM Project__c
                 WHERE Id =: pProjId];
-    }
-    
-    public class TimeEntryWrapper {
-        @AuraEnabled public Time_Entry__c timeEntry;
-        @AuraEnabled public String currTime;
-        @AuraEnabled public Boolean isPause;
-       // @AuraEnabled public Boolean isRunningTimer;
-        public TimeEntryWrapper (Time_Entry__c pTimeEntry, String pCurTime, 
-                                 Boolean pIsPause/*, Boolean pIsRunningTimer */) {
-            this.timeEntry = pTimeEntry;
-            this.currTime = pCurTime;
-            this.isPause = pIsPause;
-            //this.isRunningTimer = pIsRunningTimer;
-        }
     }
 }
