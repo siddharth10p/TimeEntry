@@ -29,7 +29,7 @@ private class TestTimerController {
             Task__c task = [SELECT Id FROM Task__c LIMIT 1];
         Test.startTest ();
             TimerController timeController = new TimerController ();
-            TimerController.createTimeEntry (proj.Id, task.Id);
+            TimerController.createTimeEntry (proj.Id, task.Id, 'Test notes');
             TimerController.updateElapsedTime (timeEntry.Id);
             TimerController.retrieveTimeObj (proj.Id);
             TimerController.updatePauseTime (timeEntry.Id, 'This is test notes');

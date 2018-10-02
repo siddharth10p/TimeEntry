@@ -7,17 +7,18 @@
  **/
 public without sharing class TimerController {
     @AuraEnabled
-    public static String createTimeEntry (String pProjId, String pTaskId) {
+    public static TimeWrapper createTimeEntry (String pProjId, String pTaskId, String pNotes) {
          if (pProjId == null || pTaskId == null)
              return null;
             Time_Entry__c timeEntry = new Time_Entry__c ();
             timeEntry.Project__c = pProjId;
             timeEntry.Task__c = pTaskId;
+            timeEntry.Notes__c = pNotes;
             timeEntry.Start_Time__c = Datetime.now();
             timeEntry.Timesheet__c = retrieveTimeSheetId (timeEntry);
             insert timeEntry;
             System.debug ('timeEntry ==> '+ timeEntry);
-        return timeEntry.Id;
+        return TimerUtil.createWrpInstance (timeEntry);
     }
 
     public static String retrieveTimeSheetId (Time_Entry__c pTimeEntry) {
@@ -33,30 +34,6 @@ public without sharing class TimerController {
         else return null;
     }
 
-    // A method to return a time-entry record to resume the time
-   /* @AuraEnabled
-    public static List<Time_Entry__c> getTimeEntry (String pProjId) {
-        List<Time_Entry__c> recsToReturn = [SELECT Id, Project__c, Task__c
-                                            FROM Time_Entry__c
-                                            WHERE Project__c =: pProjectId
-                                            AND End_Time__c = null
-                                            AND Pause_Time__c = null
-                                            AND Start_Time__c <> null
-                                            AND Approve__c = false
-                                            ORDER BY CreatedDate DESC];
-        if (recToReturn.isEmpty ()) {
-            recsToReturn = [SELECT Id, Project__c, Task__c
-                                            FROM Time_Entry__c
-                                            WHERE Project__c =: pProjectId
-                                            AND End_Time__c = null
-                                            AND Pause_Time__c = null
-                                            AND Start_Time__c <> null
-                                            AND Approve__c = false
-                                            ORDER BY CreatedDate DESC];
-        }
-            return recsToReturn.get (0);
-        else 
-    } */
     @AuraEnabled
     public static String fetchTaskId (String pProjectId) {
         List<Time_Entry__c> timeEntry = [SELECT Id, Project__c, Task__c
@@ -90,9 +67,8 @@ public without sharing class TimerController {
     }
 
    @AuraEnabled
-    public static List<TimerControllerChild> retrieveTimeObj (String pProjId) {
-       // if (String.isBlank (pProjId)) 
-        //    return null;
+    public static TimeDataWrapper retrieveTimeObj (String pProjId) {
+        TimeDataWrapper timeWrp = new TimeDataWrapper ();
         Set<Id> timesheetIdSet = new Set<Id> ();
         for (Timesheet__c timesheet : [SELECT Id FROM Timesheet__c
                                         WHERE Approve__c = false
@@ -101,7 +77,7 @@ public without sharing class TimerController {
                                         AND Developer__c =: UserInfo.getUserId ()]) {
             timesheetIdSet.add (timesheet.Id);
         }
-            List<TimerControllerChild> timeListToReturn = new List<TimerControllerChild> ();
+            List<TimeWrapper> timeListToReturn = new List<TimeWrapper> ();
             // Fetch an active time entry related to the current project record
             String queryStr = ' SELECT Id, Name, Timer_Total_Mins__c, Notes__c, Project__c, Task__c,'+
                               ' Project__r.Name, Task__r.Name, Pause_Time__c FROM Time_Entry__c';
@@ -109,7 +85,7 @@ public without sharing class TimerController {
                                 ' AND Approve__c = false';
                   queryStr += String.isBlank (pProjId)? '' :' AND Project__c =: pProjId';
                   queryStr += ' AND Timesheet__c IN : timesheetIdSet'+
-                            ' ORDER BY CreatedDate DESC';
+                            ' ORDER BY LastModifiedDate DESC';
             System.debug ('queryStr ==> ' + queryStr);
             for (Time_Entry__c timeEntry : Database.query (queryStr)) {
                 Boolean isPause = timeEntry.Pause_Time__c == null ? false : true;
@@ -119,8 +95,14 @@ public without sharing class TimerController {
                     timeListToReturn.add ( TimerUtil.createWrpInstance (timeEntry));
                 }
             }
+            timeWrp.timeValList = timeListToReturn;
+            timeWrp.projList = fetchAllProjects (null);
+            String projId = timeListToReturn.isEmpty () ? pProjId :
+                            timeListToReturn.get (0).timeEntry.Project__c;
+            timeWrp.taskList = fetchTasks (projId);
         System.debug ('timeListToReturn ==> '+ timeListToReturn);
-        return timeListToReturn;
+        System.debug ('timeWrp ==> '+ timeWrp);
+        return timeWrp;
     } // End method
 
     @AuraEnabled
@@ -153,7 +135,7 @@ public without sharing class TimerController {
     }
 
     @AuraEnabled //  A method to update pause time when user clicks on pause
-    public static TimerControllerChild updateElapsedTime (String pTimeEntryId) {
+    public static TimeWrapper updateElapsedTime (String pTimeEntryId) {
         System.debug ('pTimeEntryId ===> '+ pTimeEntryId);
         if (pTimeEntryId == null) return null;
             Time_Entry__c tEntry = [SELECT Id, Pause_Time__c, Time_Elapsed__c, Timer_Total_Mins__c,

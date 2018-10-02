@@ -17,10 +17,8 @@ public with sharing class TimerUtil {
             mm = '75';
         else if (min >= 30)
             mm = '50';
-        else if (min >= 15)
-            mm = '25';
         else 
-            mm = '00';
+            mm = '25';
         return Decimal.valueOf (hh+'.'+mm);
     }
 
@@ -40,13 +38,14 @@ public with sharing class TimerUtil {
     }
 
     // A method that returns wrapper instance of timer controller class
-    public static TimerControllerChild createWrpInstance (Time_Entry__c pTimeEntry) {
+    public static TimeWrapper createWrpInstance (Time_Entry__c pTimeEntry) {
         if (pTimeEntry == null) return null;
-        Decimal totMins = pTimeEntry.Timer_Total_Mins__c;
+        Decimal totMins = pTimeEntry.Timer_Total_Mins__c == null? 0 :
+                        pTimeEntry.Timer_Total_Mins__c;
         Decimal hh = Math.floor (totMins /60);
         Integer mm = Math.mod (Integer.valueOf (totMins), 60);
         Boolean isPause = pTimeEntry.Pause_Time__c == null ? false : true;
-        return new TimerControllerChild ( pTimeEntry,
+        return new TimeWrapper ( pTimeEntry,
                                             Integer.valueOf (hh) + ':' + mm + ':0',
                                             isPause);
     } // End method

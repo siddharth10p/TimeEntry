@@ -10,12 +10,15 @@
     <aura:attribute name="isOpen" type="boolean" default="false"/>
     <aura:attribute name="confirmSave" type="boolean" default="false"/>
     <aura:attribute name="timeEntryId" type="String"/>
+    <aura:attribute name="timeDataWpr" type="TimeDataWrapper"/>
     <aura:attribute name="wrpList" type="List"/>
-    <aura:attribute name="wrpObj" type="TimerControllerChild"/>
+    <aura:attribute name="wrpObj" type="TimeWrapper"/>
     <aura:attribute name="projects" type="List"/>
     <aura:attribute name="tasks" type="List"/>
     <aura:attribute name="taskId" type="String"/>
     <aura:attribute name="projId" type="String"/>
+    <aura:attribute name="taskId_bk" type="String"/>
+    <aura:attribute name="projId_bk" type="String"/>
     <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
 
 	<form>
@@ -61,17 +64,20 @@
             <div class="slds-backdrop slds-backdrop_open"></div>
         </aura:if>
     <div class="slds-box slds-box_x-small">
-    	<lightning:select label="Project" name="proj_opt" aura:id="p_opt" onchange="{!c.disTasks}">
+    	<lightning:select label="Project" name="proj_opt" aura:id="prj_opt" onchange="{!c.disTasks}"
+                          value="{!v.projId}">
+            <option value="" >--Select a Project--</option>
             <aura:iteration items="{!v.projects}" var="proj" >
-                <option value="{!proj.Id}" >{!proj.Name}</option>
+                <option value="{!proj.Id}" selected="{!proj.Id==v.projId}">{!proj.Name}</option>
             </aura:iteration>
     	</lightning:select>
     </div>
     <div class="slds-box slds-box_x-small">
-    	<lightning:select label="Task" name="task_opt" aura:id="t_opt" onchange="{!c.validate}">
-            <option value="">--Select Task --</option>
+    	<lightning:select label="Task" name="task_opt" aura:id="tsk_opt" onchange="{!c.validate}"
+                          value="{!v.taskId}">
+            <option value="" >--Select a Task--</option>
             <aura:iteration items="{!v.tasks}" var="task" >
-                <option value="{!task.Id}" >{!task.Name}</option>
+                <option value="{!task.Id}" selected="{!task.Id==v.taskId}">{!task.Name}</option>
             </aura:iteration>
     	</lightning:select>
     </div>

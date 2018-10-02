@@ -19,8 +19,8 @@ global with sharing class CreateTimesheetBatch implements Database.Batchable<sOb
             Timesheet__c timeSheet = new Timesheet__c ();
             timeSheet.Name = aUser.Name + ' - ' + 
                             TimerUtil.monthName.get (Date.today ().month());
-            timeSheet.Week_Start_Date__c = Date.today ().addDays (1);
-            timeSheet.Week_End_Date__c = Date.today ().addDays (7);
+            timeSheet.Week_Start_Date__c = Date.today ().addDays (1); // Set as Monday
+            timeSheet.Week_End_Date__c = Date.today ().addDays (7); // Set as Sunday
             timeSheet.Developer__c = aUser.Id;
             timeSheetListToInsert.add (timeSheet);
        }// End for
@@ -34,6 +34,6 @@ global with sharing class CreateTimesheetBatch implements Database.Batchable<sOb
 
     global void execute(SchedulableContext SC){
         CreateTimesheetBatch createTimeSheet = new CreateTimesheetBatch();
-        ID batchprocessid = Database.executeBatch(createTimeSheet, 100);
+        ID batchProcessId = Database.executeBatch(createTimeSheet, 200);
     }
 }
