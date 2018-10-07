@@ -10,18 +10,20 @@ public without sharing class TimerController {
     public static TimeWrapper createTimeEntry (String pProjId, String pTaskId, String pNotes) {
          if (pProjId == null || pTaskId == null)
              return null;
+            SObjectUnitOfWork uow = new SObjectUnitOfWork ( new Schema.SObjectType[] {
+                                    Time_Entry__c.SObjectType });
             Time_Entry__c timeEntry = new Time_Entry__c ();
             timeEntry.Project__c = pProjId;
             timeEntry.Task__c = pTaskId;
             timeEntry.Notes__c = pNotes;
             timeEntry.Start_Time__c = Datetime.now();
-            timeEntry.Timesheet__c = retrieveTimeSheetId (timeEntry);
-            insert timeEntry;
+            uow.registerNew (timeEntry, Time_Entry__c.Timesheet__c, retrieveTimeSheet (timeEntry));
+            uow.commitWork ();
             System.debug ('timeEntry ==> '+ timeEntry);
         return TimerUtil.createWrpInstance (timeEntry);
     }
 
-    public static String retrieveTimeSheetId (Time_Entry__c pTimeEntry) {
+    public static Timesheet__c retrieveTimeSheet (Time_Entry__c pTimeEntry) {
         List<Timesheet__c> timeSheetList = [SELECT Id FROM Timesheet__c
                                             WHERE Approve__c = false
                                             AND Week_Start_Date__c <= TODAY
@@ -30,22 +32,8 @@ public without sharing class TimerController {
                                             ORDER BY CreatedDate DESC
                                             LIMIT 1];
         if (!timeSheetList.isEmpty ())
-            return timeSheetList.get (0).Id;
+            return timeSheetList.get (0);
         else return null;
-    }
-
-    @AuraEnabled
-    public static String fetchTaskId (String pProjectId) {
-        List<Time_Entry__c> timeEntry = [SELECT Id, Project__c, Task__c
-                                            FROM Time_Entry__c
-                                            WHERE Project__c =: pProjectId
-                                            AND End_Time__c = null
-                                            AND Start_Time__c <> null
-                                            AND Approve__c = false
-                                            ORDER BY CreatedDate DESC];
-        if (!timeEntry.isEmpty ())
-            return timeEntry.get (0).Task__c;
-            return null;
     }
 
     @AuraEnabled
@@ -54,6 +42,8 @@ public without sharing class TimerController {
             System.debug ('pRecId ==> ' + pRecId);
             System.debug ('pNote ==> ' + pNote);
         if (String.isNotBlank (pTime) && String.isNotBlank (pRecId)) {
+            SObjectUnitOfWork uow = new SObjectUnitOfWork ( new Schema.SObjectType[] {
+                                    Time_Entry__c.SObjectType });
             List<Time_Entry__c> timeEntryList = [SELECT Id, Time__c, Notes__c
                                                 FROM Time_Entry__c
                                                 WHERE Id =: pRecId
@@ -61,7 +51,8 @@ public without sharing class TimerController {
             timeEntryList.get (0).Time__c = TimerUtil.convertTimeInDecimal (pTime);
             timeEntryList.get (0).Notes__c = pNote;
             timeEntryList.get (0).End_Time__c = Datetime.now ();
-            update timeEntryList;
+            uow.registerDirty (timeEntryList);
+            uow.commitWork ();
             System.debug ('timeEntryList ==> ' + timeEntryList);
         }
     }
@@ -119,6 +110,8 @@ public without sharing class TimerController {
     public static void updatePauseTime (String pTimeEntryId, String pNotes) {
         System.debug ('pTimeEntryId ===> '+ pTimeEntryId);
         if (pTimeEntryId != null) {
+            SObjectUnitOfWork uow = new SObjectUnitOfWork ( new Schema.SObjectType[] {
+                                    Time_Entry__c.SObjectType });
             Time_Entry__c tEntry = [SELECT Id, Pause_Time__c, Notes__c,
                                         Project__c, Task__c
                                     FROM Time_Entry__c
@@ -129,7 +122,8 @@ public without sharing class TimerController {
                                     LIMIT 1 ];
             tEntry.Pause_Time__c = Datetime.now ();
             tEntry.Notes__c = pNotes;
-            update tEntry;
+            uow.registerDirty (tEntry);
+            uow.commitWork ();
             System.debug ('tEntry ===> '+ tEntry);
         }
     }
@@ -138,6 +132,8 @@ public without sharing class TimerController {
     public static TimeWrapper updateElapsedTime (String pTimeEntryId) {
         System.debug ('pTimeEntryId ===> '+ pTimeEntryId);
         if (pTimeEntryId == null) return null;
+            SObjectUnitOfWork uow = new SObjectUnitOfWork ( new Schema.SObjectType[] {
+                                    Time_Entry__c.SObjectType });
             Time_Entry__c tEntry = [SELECT Id, Pause_Time__c, Time_Elapsed__c, Timer_Total_Mins__c,
                                         Notes__c, Project__c, Task__c, Project__r.Name, 
                                         Task__r.Name, Start_Time__c
@@ -152,7 +148,8 @@ public without sharing class TimerController {
                                 tEntry.Time_Elapsed__c;
             tEntry.Time_Elapsed__c = TimerUtil.retrieveElapsedTime (startTime, tEntry.Pause_Time__c);
             tEntry.Pause_Time__c = null;
-            update tEntry;
+            uow.registerDirty (tEntry);
+            uow.commitWork ();
             System.debug ('tEntry ===> '+ tEntry);
         return TimerUtil.createWrpInstance (tEntry);
     }

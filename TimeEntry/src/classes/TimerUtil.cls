@@ -69,23 +69,32 @@ public with sharing class TimerUtil {
 
     // A method that creates data for test classes
     public static void setTestData () {// create test data
+        SObjectUnitOfWork uow = new SObjectUnitOfWork(
+            new Schema.SObjectType[] {
+                Account.SObjectType,
+                Project__c.SObjectType,
+                Task__c.SObjectType,
+                Timesheet__c.SObjectType,
+                Time_Entry__c.SObjectType}
+        );
         Account acc = new Account (Name='Test Acc');
-        insert acc;
+        uow.registerNew (acc);
 
-        Project__c proj = new Project__c (Client__c = acc.Id);
-        insert proj;
+        Project__c proj = new Project__c (Name = 'Test project');
+        uow.registerNew (proj, Project__c.Client__c, acc);
 
-        Task__c task = new Task__c (Project__c = proj.Id, Name = 'Test Task');
-        insert task;
+        Task__c task = new Task__c (Name = 'Test Task');
+        uow.registerNew (task, Task__c.Project__c, proj);
 
-        Timesheet__c timeSheet = new Timesheet__c (Developer__c = UserInfo.getUserId (), 
-                            Week_Start_Date__c = Date.today().addDays (-1),
+        User currUser = [SELECT Id FROM User WHERE Id =: UserInfo.getUserId() LIMIT 1];
+        Timesheet__c timeSheet = new Timesheet__c (Week_Start_Date__c = Date.today().addDays (-1),
                             Week_End_Date__c = Date.today().addDays (+6), Approve__c = false);
-        insert timeSheet;
+        uow.registerNew (timeSheet, Timesheet__c.Developer__c, currUser);
 
-        Time_Entry__c timeEntry = new Time_Entry__c (Timesheet__c = timeSheet.Id,
-                        Start_Time__c = Datetime.now(), Pause_Time__c = Datetime.now (),
-                        Approve__c = false);
-        insert timeEntry;
+        Time_Entry__c timeEntry = new Time_Entry__c (Start_Time__c = Datetime.now(),
+                            Pause_Time__c = Datetime.now (),Approve__c = false);
+        uow.registerNew (timeEntry, Time_Entry__c.Timesheet__c, timeSheet);
+
+        uow.commitWork ();
     }
 }

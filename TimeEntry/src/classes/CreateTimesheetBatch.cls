@@ -7,14 +7,16 @@
  **/
 global with sharing class CreateTimesheetBatch implements Database.Batchable<sObject>,
                                                             Schedulable{
+    SObjectUnitOfWork uow = new SObjectUnitOfWork(
+        new Schema.SObjectType[] { Timesheet__c.SObjectType }
+    );
 
     // No data to fetch
     global Database.QueryLocator start(Database.BatchableContext BC){
-      return Database.getQueryLocator([SELECT Id, Name FROM User]);
+        return Database.getQueryLocator([SELECT Id, Name FROM User]);
    }
 
    global void execute(Database.BatchableContext BC, List<sObject> scope){
-       List<Timesheet__c> timeSheetListToInsert = new List<Timesheet__c> ();
        for (User aUser : (List<User>) scope) {
             Timesheet__c timeSheet = new Timesheet__c ();
             timeSheet.Name = aUser.Name + ' - ' + 
@@ -22,11 +24,10 @@ global with sharing class CreateTimesheetBatch implements Database.Batchable<sOb
             timeSheet.Week_Start_Date__c = Date.today ().addDays (1); // Set as Monday
             timeSheet.Week_End_Date__c = Date.today ().addDays (7); // Set as Sunday
             timeSheet.Developer__c = aUser.Id;
-            timeSheetListToInsert.add (timeSheet);
+            uow.registerNew (timeSheet, Timesheet__c.Developer__c, aUser);
        }// End for
 
-        if (!timeSheetListToInsert.isEmpty ())
-            insert timeSheetListToInsert;
+        uow.commitWork ();
     } // End method
 
     global void finish(Database.BatchableContext BC){

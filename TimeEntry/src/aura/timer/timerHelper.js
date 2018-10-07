@@ -88,34 +88,7 @@
         });
         $A.enqueueAction(action);
     },
-
-    fetchTaskId : function (cmp) {
-        var action = cmp.get ("c.fetchTaskId");
-        action.setParams ({
-            pProjectId : cmp.get ("v.recordId")
-        });
-        action.setCallback (this, function (response) {
-            var state = response.getState ();
-            if (state === 'ERROR') {
-                var errors = response.getError();
-                if (errors) {
-                    if (errors[0] && errors[0].message) {
-                        console.log("Error message: " + 
-                                    errors[0].message);
-                    }
-                } else {
-                    console.log("Unknown error");
-                }
-                
-            } else if (state === 'SUCCESS') {
-                var taskId = response.getReturnValue();
-                if (taskId)
-                cmp.find("t_opt").set("v.value", taskId);
-            } 
-        });
-        $A.enqueueAction(action);
-    },
- 
+    
     createTimeEntry : function (cmp) {
         if (cmp.get ("v.taskId") === cmp.get ("v.taskId_bk") &&
 			cmp.get ("v.projId") === cmp.get ("v.projId_bk") && 
@@ -296,11 +269,11 @@
             this.createTimeEntry (cmp);
             return; // skipping the logic as the same function is called asynchrounsly from createTimeEntry ()
         }
-        cmp.set ("v.startTimer", true);
+        //cmp.set ("v.startTimer", true);
         var timeId = cmp.get ("v.timeEntryId");
         var action = cmp.get ("c.updateTime");
         var timeVal = !cmp.get ("v.timeVal")? cmp.get ("v.timeValBk") : cmp.get ("v.timeVal");
-        action.setParams ({
+		action.setParams ({
             pRecId : cmp.get ("v.timeEntryId"),
             pTime : this.formatTime (timeVal),
             pNote : cmp.get ("v.note")
@@ -325,6 +298,7 @@
                 cmp.set ("v.timeValBk", "");
                 cmp.set ("v.note", "");
                 cmp.set ("v.taskId", "");
+                cmp.set ("v.projId", cmp.get ("v.recordId"));
                 var temp = cmp.get ("v.intervalId");
         		clearInterval (temp);
 				alert ('Time logged!');
@@ -438,7 +412,7 @@
         }
         var action = cmp.get ("c.retrieveTimeObj");
         action.setParams ({
-            pProjId : cmp.get ("v.recordId")
+            pProjId : null
         });
         
         action.setCallback (this, function (response) {
